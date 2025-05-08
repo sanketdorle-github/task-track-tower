@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 interface AppHeaderProps {
   onCreateBoardClick?: () => void;
@@ -31,11 +32,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onCreateBoardClick }) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <header className="bg-background border-b border-border sticky top-0 z-10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center">
           <h1 
-            className="text-xl font-bold text-purple-700 cursor-pointer"
+            className="text-xl font-bold text-purple-700 dark:text-purple-400 cursor-pointer"
             onClick={() => navigate("/dashboard")}
           >
             Kanban
@@ -45,13 +46,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onCreateBoardClick }) => {
             <Button 
               variant="ghost" 
               onClick={() => navigate("/dashboard")}
-              className="text-gray-700 hover:text-purple-700"
+              className="text-foreground hover:text-purple-700 dark:hover:text-purple-400"
             >
               Boards
             </Button>
             <Button 
               variant="ghost"
-              className="text-gray-700 hover:text-purple-700"
+              className="text-foreground hover:text-purple-700 dark:hover:text-purple-400"
             >
               Workspaces
             </Button>
@@ -60,27 +61,29 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onCreateBoardClick }) => {
 
         <div className="flex items-center space-x-2">
           <div className="relative hidden md:block mx-2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <input
               type="text"
               placeholder="Search..."
-              className="pl-10 pr-4 py-2 bg-gray-100 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="pl-10 pr-4 py-2 bg-secondary rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
+
+          <ThemeToggle />
 
           <Button 
             size="sm"
             variant="ghost"
             className="rounded-full p-2"
           >
-            <Bell className="h-5 w-5 text-gray-700" />
+            <Bell className="h-5 w-5 text-foreground" />
           </Button>
 
           <Button 
             size="sm"
             variant="outline"
             onClick={onCreateBoardClick}
-            className="hidden md:flex items-center text-purple-600 border-purple-600 hover:bg-purple-50"
+            className="hidden md:flex items-center text-purple-600 dark:text-purple-400 border-purple-600 dark:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
           >
             <Plus className="h-4 w-4 mr-1" /> Create Board
           </Button>
@@ -90,9 +93,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onCreateBoardClick }) => {
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className="rounded-full p-0 h-9 w-9 bg-purple-100"
+                className="rounded-full p-0 h-9 w-9 bg-purple-100 dark:bg-purple-900/30"
               >
-                <User className="h-5 w-5 text-purple-700" />
+                <User className="h-5 w-5 text-purple-700 dark:text-purple-400" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
