@@ -43,21 +43,21 @@ const BoardCard: React.FC<BoardCardProps> = ({
 
   return (
     <Card 
-      className="cursor-pointer group transition-all hover:shadow-md hover:scale-[1.02] overflow-hidden"
+      className="cursor-pointer group transition-all hover:shadow-md hover:scale-[1.02] overflow-hidden dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600"
       onClick={handleClick}
     >
       <div className={`h-2 ${color}`} />
       <CardContent className="p-4 flex items-center justify-between">
-        <h3 className="font-medium text-base">{title}</h3>
+        <h3 className="font-medium text-base dark:text-gray-200">{title}</h3>
         
         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 onClick={(e) => e.stopPropagation()}
-                className="p-1 rounded-full hover:bg-gray-100"
+                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <MoreHorizontal className="h-4 w-4 text-gray-500" />
+                <MoreHorizontal className="h-4 w-4 text-gray-500 dark:text-gray-400" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

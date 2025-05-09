@@ -83,8 +83,10 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   className={`min-h-[12rem] p-2 ${
-                    snapshot.isDraggingOver ? "bg-purple-50 dark:bg-purple-900/20" : ""
-                  }`}
+                    snapshot.isDraggingOver 
+                      ? "bg-purple-50 dark:bg-purple-900/30" 
+                      : "bg-gray-100 dark:bg-gray-800"
+                  } transition-colors duration-200`}
                 >
                   {tasks.map((task, index) => (
                     <TaskCard

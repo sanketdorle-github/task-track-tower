@@ -176,15 +176,15 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <AppHeader onCreateBoardClick={() => setCreateDialogOpen(true)} />
       
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">My Boards</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">My Boards</h1>
           <button
             onClick={() => setCreateDialogOpen(true)}
-            className="flex items-center text-purple-600 hover:text-purple-800"
+            className="flex items-center text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
           >
             <PlusCircle className="h-5 w-5 mr-2" />
             <span>Create New Board</span>
@@ -194,13 +194,13 @@ const DashboardPage = () => {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded-md animate-pulse" />
+              <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse" />
             ))}
           </div>
         ) : boards.length === 0 ? (
           <div className="text-center py-16">
-            <h2 className="text-xl text-gray-600 mb-4">No boards yet</h2>
-            <p className="text-gray-500 mb-6">Create your first board to get started</p>
+            <h2 className="text-xl text-gray-600 dark:text-gray-300 mb-4">No boards yet</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">Create your first board to get started</p>
             <button
               onClick={() => setCreateDialogOpen(true)}
               className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"

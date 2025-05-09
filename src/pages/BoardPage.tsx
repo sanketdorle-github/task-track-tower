@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
@@ -398,14 +397,14 @@ const BoardPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background dark:bg-background">
         <AppHeader />
         <div className="flex justify-center items-center h-[calc(100vh-64px)]">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 w-64 bg-gray-200 rounded"></div>
+            <div className="h-8 w-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
             <div className="flex space-x-4">
               {[1, 2, 3].map(i => (
-                <div key={i} className="w-72 h-96 bg-gray-200 rounded"></div>
+                <div key={i} className="w-72 h-96 bg-gray-200 dark:bg-gray-700 rounded"></div>
               ))}
             </div>
           </div>
@@ -416,10 +415,10 @@ const BoardPage = () => {
 
   if (!board) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background dark:bg-background">
         <AppHeader />
         <div className="container mx-auto px-4 py-8 text-center">
-          <h2 className="text-xl text-gray-600">Board not found</h2>
+          <h2 className="text-xl text-gray-600 dark:text-gray-300">Board not found</h2>
           <button
             onClick={() => navigate("/dashboard")}
             className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
@@ -432,12 +431,12 @@ const BoardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <AppHeader />
       
       <div className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">{board.title}</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{board.title}</h1>
           <Button 
             onClick={handleAddColumn}
             className="bg-purple-600 hover:bg-purple-700"
