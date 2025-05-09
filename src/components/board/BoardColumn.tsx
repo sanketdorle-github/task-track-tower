@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Draggable, Droppable } from "@hello-pangea/dnd";
 import { MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,14 +48,14 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
           {...provided.draggableProps}
           className="w-72 flex-shrink-0 mr-3"
         >
-          <div className="bg-gray-100 rounded-md shadow">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-md shadow">
             <div
               {...provided.dragHandleProps}
-              className="p-2 font-medium flex items-center justify-between bg-gray-200 rounded-t-md"
+              className="p-2 font-medium flex items-center justify-between bg-gray-200 dark:bg-gray-700 rounded-t-md"
             >
-              <h3 className="text-sm truncate px-2">{title}</h3>
+              <h3 className="text-sm truncate px-2 text-gray-800 dark:text-gray-200">{title}</h3>
               <div className="flex items-center">
-                <span className="text-xs text-gray-500 mr-2">{tasks.length}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">{tasks.length}</span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
@@ -83,7 +83,7 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   className={`min-h-[12rem] p-2 ${
-                    snapshot.isDraggingOver ? "bg-purple-50" : ""
+                    snapshot.isDraggingOver ? "bg-purple-50 dark:bg-purple-900/20" : ""
                   }`}
                 >
                   {tasks.map((task, index) => (
@@ -100,11 +100,11 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
               )}
             </Droppable>
 
-            <div className="p-2 border-t border-gray-200">
+            <div className="p-2 border-t border-gray-200 dark:border-gray-700">
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start text-gray-500 hover:text-gray-700"
+                className="w-full justify-start text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 onClick={() => onAddTask(id)}
               >
                 <Plus className="h-4 w-4 mr-1" /> Add Task

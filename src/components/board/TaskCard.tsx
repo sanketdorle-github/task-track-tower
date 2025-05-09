@@ -34,10 +34,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, onDelete }) =>
           {...provided.dragHandleProps}
           className={`mb-2 p-3 group ${
             snapshot.isDragging ? "shadow-lg" : "shadow-sm"
-          } bg-white`}
+          } bg-white dark:bg-gray-800 border-border`}
         >
           <div className="flex justify-between items-start">
-            <h4 className="text-sm font-medium">{task.title}</h4>
+            <h4 className="text-sm font-medium text-foreground">{task.title}</h4>
             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -59,7 +59,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, onDelete }) =>
             </div>
           </div>
           {task.description && (
-            <p className="text-xs text-gray-500 mt-2">{task.description}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{task.description}</p>
           )}
         </Card>
       )}
