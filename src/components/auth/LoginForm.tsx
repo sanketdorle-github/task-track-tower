@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import FormItem from "@/components/ui/form-item";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { loginUser } from "@/store/slices/userSlice";
 
 interface LoginFormValues {
   email: string;
@@ -14,13 +16,14 @@ interface LoginFormValues {
 
 const LoginForm: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { loading: isLoading, error } = useAppSelector((state) => state.user);
   const { toast } = useToast();
   const [formValues, setFormValues] = useState<LoginFormValues>({
     email: "",
     password: "",
   });
   const [errors, setErrors] = useState<Partial<LoginFormValues>>({});
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -55,16 +58,11 @@ const LoginForm: React.FC = () => {
       return;
     }
     
-    setIsLoading(true);
-    
-    // Simulate API call for now - in a real app this would call your auth API
     try {
-      // Mock successful login
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Set mock token in localStorage (in real app, this would come from your API)
-      localStorage.setItem("token", "mock-jwt-token");
-      localStorage.setItem("user", JSON.stringify({ id: "1", email: formValues.email }));
+      const result = await dispatch(loginUser({ 
+        email: formValues.email, 
+        password: formValues.password 
+      })).unwrap();
       
       toast({
         title: "Success",
@@ -76,10 +74,8 @@ const LoginForm: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to log in. Please check your credentials.",
+        description: error as string || "Failed to log in. Please check your credentials.",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -90,6 +86,12 @@ const LoginForm: React.FC = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+          
           <FormItem label="Email" error={errors.email}>
             <Input
               type="email"

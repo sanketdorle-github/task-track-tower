@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import FormItem from "@/components/ui/form-item";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { registerUser } from "@/store/slices/userSlice";
 
 interface RegisterFormValues {
   name: string;
@@ -16,6 +18,8 @@ interface RegisterFormValues {
 
 const RegisterForm: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { loading: isLoading, error } = useAppSelector((state) => state.user);
   const { toast } = useToast();
   const [formValues, setFormValues] = useState<RegisterFormValues>({
     name: "",
@@ -24,7 +28,6 @@ const RegisterForm: React.FC = () => {
     confirmPassword: "",
   });
   const [errors, setErrors] = useState<Partial<RegisterFormValues>>({});
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -71,12 +74,12 @@ const RegisterForm: React.FC = () => {
       return;
     }
     
-    setIsLoading(true);
-    
-    // Simulate API call for now - in a real app this would call your auth API
     try {
-      // Mock successful registration
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await dispatch(registerUser({
+        name: formValues.name,
+        email: formValues.email,
+        password: formValues.password
+      })).unwrap();
       
       toast({
         title: "Success",
@@ -88,10 +91,8 @@ const RegisterForm: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to register. Please try again.",
+        description: error as string || "Failed to register. Please try again.",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -102,6 +103,12 @@ const RegisterForm: React.FC = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+          
           <FormItem label="Name" error={errors.name}>
             <Input
               type="text"

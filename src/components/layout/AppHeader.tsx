@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logoutUser } from "@/store/slices/userSlice";
 
 interface AppHeaderProps {
   onCreateBoardClick?: () => void;
@@ -19,17 +21,13 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onCreateBoardClick }) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { currentUser } = useAppSelector(state => state.user);
   
   const handleLogout = () => {
-    // Clear auth data from localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    
-    // Redirect to login page
+    dispatch(logoutUser());
     navigate("/login");
   };
-  
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-10">
@@ -101,7 +99,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onCreateBoardClick }) => {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuItem className="cursor-default">
-                {user.email || "user@example.com"}
+                {currentUser?.email || "user@example.com"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/profile")}>
