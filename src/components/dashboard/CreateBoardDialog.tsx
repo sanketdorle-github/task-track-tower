@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -16,17 +16,30 @@ interface CreateBoardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreateBoard: (title: string) => void;
+  defaultValue?: string; // Added defaultValue as an optional prop
 }
 
 const CreateBoardDialog: React.FC<CreateBoardDialogProps> = ({
   open,
   onOpenChange,
   onCreateBoard,
+  defaultValue = "", // Default to empty string if not provided
 }) => {
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Set title when defaultValue changes or dialog opens
+  useEffect(() => {
+    if (open && defaultValue) {
+      setTitle(defaultValue);
+    } else if (!open) {
+      // Reset form when dialog closes
+      setTitle("");
+      setError("");
+    }
+  }, [open, defaultValue]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,10 +56,6 @@ const CreateBoardDialog: React.FC<CreateBoardDialogProps> = ({
       setTitle("");
       setError("");
       onOpenChange(false);
-      toast({
-        title: "Success",
-        description: "Board created successfully!",
-      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -62,7 +71,7 @@ const CreateBoardDialog: React.FC<CreateBoardDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Board</DialogTitle>
+          <DialogTitle>{defaultValue ? "Edit" : "Create New"} Board</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="py-4">
@@ -88,7 +97,8 @@ const CreateBoardDialog: React.FC<CreateBoardDialogProps> = ({
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Board"}
+              {isLoading ? (defaultValue ? "Updating..." : "Creating...") : 
+                          (defaultValue ? "Update Board" : "Create Board")}
             </Button>
           </DialogFooter>
         </form>
