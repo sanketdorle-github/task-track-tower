@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/layout/AppHeader";
 import BoardCard from "@/components/dashboard/BoardCard";
 import CreateBoardDialog from "@/components/dashboard/CreateBoardDialog";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchBoards, createBoard, updateBoard, deleteBoard } from "@/store/slices/boardsSlice";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,21 +19,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface Board {
-  id: string;
-  title: string;
-  color?: string;
-}
-
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [boards, setBoards] = useState<Board[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { boards, loading, error } = useAppSelector((state) => state.boards);
+  
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editBoardId, setEditBoardId] = useState<string | null>(null);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
-  const [boardToEdit, setBoardToEdit] = useState<Board | null>(null);
+  const [boardToEdit, setBoardToEdit] = useState<{ id: string, title: string } | null>(null);
   
   // Check authentication
   useEffect(() => {
@@ -41,64 +38,34 @@ const DashboardPage = () => {
       return;
     }
     
-    // Fetch boards (mock data for now)
-    fetchBoards();
-  }, [navigate]);
-  
-  const fetchBoards = async () => {
-    setLoading(true);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Mock data
-    const mockBoards: Board[] = [
-      {
-        id: "1",
-        title: "Project Alpha",
-        color: "bg-purple-500"
-      },
-      {
-        id: "2",
-        title: "Marketing Campaign",
-        color: "bg-blue-500"
-      },
-      {
-        id: "3",
-        title: "Website Redesign",
-        color: "bg-indigo-500"
-      },
-      {
-        id: "4",
-        title: "Personal Tasks",
-        color: "bg-pink-500"
-      }
-    ];
-    
-    setBoards(mockBoards);
-    setLoading(false);
-  };
+    // Fetch boards using Redux thunk
+    dispatch(fetchBoards());
+  }, [navigate, dispatch]);
   
   const handleCreateBoard = async (title: string) => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Generate a random ID and add new board
-    const newBoard: Board = {
-      id: `board-${Date.now()}`,
-      title,
-      color: getRandomColor(),
-    };
-    
-    setBoards(prev => [...prev, newBoard]);
-    
-    return newBoard;
+    try {
+      // Dispatch the createBoard action
+      const resultAction = await dispatch(createBoard(title));
+      if (createBoard.fulfilled.match(resultAction)) {
+        toast({
+          title: "Success",
+          description: "Board created successfully!",
+        });
+        return resultAction.payload;
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create board. Please try again.",
+      });
+    }
   };
   
   const handleEditBoard = (id: string) => {
     const board = boards.find(b => b.id === id);
     if (board) {
-      setBoardToEdit(board);
+      setBoardToEdit({ id, title: board.title });
       setEditBoardId(id);
     }
   };
@@ -111,16 +78,14 @@ const DashboardPage = () => {
     if (!deleteBoardId) return;
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Remove board from state
-      setBoards(prev => prev.filter(board => board.id !== deleteBoardId));
-      
-      toast({
-        title: "Success",
-        description: "Board deleted successfully!",
-      });
+      // Dispatch the deleteBoard action
+      const resultAction = await dispatch(deleteBoard(deleteBoardId));
+      if (deleteBoard.fulfilled.match(resultAction)) {
+        toast({
+          title: "Success",
+          description: "Board deleted successfully!",
+        });
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -136,20 +101,14 @@ const DashboardPage = () => {
     if (!editBoardId) return;
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Update board in state
-      setBoards(prev =>
-        prev.map(board =>
-          board.id === editBoardId ? { ...board, title } : board
-        )
-      );
-      
-      toast({
-        title: "Success",
-        description: "Board updated successfully!",
-      });
+      // Dispatch the updateBoard action
+      const resultAction = await dispatch(updateBoard({ id: editBoardId, title }));
+      if (updateBoard.fulfilled.match(resultAction)) {
+        toast({
+          title: "Success",
+          description: "Board updated successfully!",
+        });
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -160,19 +119,6 @@ const DashboardPage = () => {
       setEditBoardId(null);
       setBoardToEdit(null);
     }
-  };
-  
-  // Helper function to get random color for new boards
-  const getRandomColor = () => {
-    const colors = [
-      "bg-purple-500",
-      "bg-blue-500",
-      "bg-indigo-500",
-      "bg-pink-500",
-      "bg-teal-500",
-      "bg-green-500"
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
   };
 
   return (
@@ -241,6 +187,7 @@ const DashboardPage = () => {
           }
         }}
         onCreateBoard={handleUpdateBoard}
+        defaultValue={boardToEdit?.title || ""}
       />
       
       {/* Delete Confirmation Dialog */}
