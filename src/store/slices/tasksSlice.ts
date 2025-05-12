@@ -1,4 +1,3 @@
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Column, Task } from '../../types/board';
 
@@ -143,7 +142,7 @@ export const moveTask = createAsyncThunk(
     destColumnId: string, 
     sourceIndex: number, 
     destIndex: number 
-  }, { getState }) => {
+  }) => {
     // This would be an API call in a real application
     return mockApiCall({ 
       taskId, 
