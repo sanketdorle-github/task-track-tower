@@ -18,7 +18,8 @@ import {
   createTask,
   updateTask,
   deleteTask,
-  moveTask
+  moveTask,
+  moveColumn
 } from "@/store/slices/tasksSlice";
 import {
   AlertDialog,
@@ -81,8 +82,12 @@ const BoardPage = () => {
     }
     
     if (type === "column") {
-      // Handle column reordering in a real app
-      // Currently, we don't have an API for this, so we'll skip it
+      // Handle column reordering
+      dispatch(moveColumn({
+        columnId: draggableId,
+        sourceIndex: source.index,
+        destIndex: destination.index
+      }));
       return;
     }
     
@@ -321,11 +326,13 @@ const BoardPage = () => {
 
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="all-columns" direction="horizontal" type="column">
-            {(provided) => (
+            {(provided, snapshot) => (
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className="flex overflow-x-auto pb-4"
+                className={`flex overflow-x-auto pb-4 ${
+                  snapshot.isDraggingOver ? "bg-purple-50/20 dark:bg-purple-900/10 rounded-lg" : ""
+                }`}
                 style={{ minHeight: "calc(100vh - 180px)" }}
               >
                 {columns.map((column, index) => (

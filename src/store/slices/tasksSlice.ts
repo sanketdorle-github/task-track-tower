@@ -1,3 +1,4 @@
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Column, Task } from '../../types/board';
 
@@ -154,6 +155,27 @@ export const moveTask = createAsyncThunk(
   }
 );
 
+// Add new action for moving columns
+export const moveColumn = createAsyncThunk(
+  'tasks/moveColumn',
+  async ({ 
+    columnId, 
+    sourceIndex, 
+    destIndex 
+  }: { 
+    columnId: string, 
+    sourceIndex: number, 
+    destIndex: number 
+  }) => {
+    // This would be an API call in a real application
+    return mockApiCall({ 
+      columnId,
+      sourceIndex, 
+      destIndex 
+    });
+  }
+);
+
 const tasksSlice = createSlice({
   name: 'tasks',
   initialState,
@@ -246,6 +268,15 @@ const tasksSlice = createSlice({
             destColumn.tasks.splice(destIndex, 0, movedTask);
           }
         }
+      })
+      
+      // Add handler for column reordering
+      .addCase(moveColumn.fulfilled, (state, action) => {
+        const { columnId, sourceIndex, destIndex } = action.payload;
+        
+        // Reorder columns array
+        const [movedColumn] = state.columns.splice(sourceIndex, 1);
+        state.columns.splice(destIndex, 0, movedColumn);
       });
   },
 });
