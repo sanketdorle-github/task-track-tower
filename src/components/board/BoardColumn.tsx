@@ -42,16 +42,23 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
 }) => {
   return (
     <Draggable draggableId={id} index={index}>
-      {(provided) => (
+      {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="w-72 flex-shrink-0 mr-3"
+          className={`w-72 flex-shrink-0 mr-3 transition-transform duration-200 ease-in-out ${
+            snapshot.isDragging ? "scale-[1.01] z-50" : ""
+          }`}
+          style={{
+            ...provided.draggableProps.style,
+          }}
         >
-          <div className="bg-gray-100 dark:bg-gray-800 rounded-md shadow">
+          <div className={`bg-gray-100 dark:bg-gray-800 rounded-md shadow-md transition-shadow duration-200 ${
+            snapshot.isDragging ? "shadow-lg" : ""
+          }`}>
             <div
               {...provided.dragHandleProps}
-              className="p-2 font-medium flex items-center justify-between bg-gray-200 dark:bg-gray-700 rounded-t-md"
+              className="p-2 font-medium flex items-center justify-between bg-gray-200 dark:bg-gray-700 rounded-t-md cursor-grab active:cursor-grabbing"
             >
               <h3 className="text-sm truncate px-2 text-gray-800 dark:text-gray-200">{title}</h3>
               <div className="flex items-center">
@@ -82,11 +89,11 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`min-h-[12rem] p-2 ${
+                  className={`min-h-[12rem] p-2 transition-colors duration-300 ease-in-out ${
                     snapshot.isDraggingOver 
-                      ? "bg-purple-50 dark:bg-purple-900/30" 
+                      ? "bg-purple-50/60 dark:bg-purple-900/40" 
                       : "bg-gray-100 dark:bg-gray-800"
-                  } transition-colors duration-200`}
+                  }`}
                 >
                   {tasks.map((task, index) => (
                     <TaskCard

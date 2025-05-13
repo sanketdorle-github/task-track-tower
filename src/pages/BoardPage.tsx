@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
@@ -93,7 +92,7 @@ const BoardPage = () => {
     loadData();
   }, [navigate, boardId, toast]);
 
-  // Handle drag and drop
+  // Enhance the drag and drop experience
   const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId, type } = result;
     
@@ -107,7 +106,7 @@ const BoardPage = () => {
         // Handle column reordering
         await moveColumn(draggableId, source.index, destination.index);
         
-        // Update local state
+        // Update local state immediately for smooth UI
         const newColumns = [...columns];
         const [movedColumn] = newColumns.splice(source.index, 1);
         newColumns.splice(destination.index, 0, movedColumn);
@@ -122,7 +121,7 @@ const BoardPage = () => {
           destination.index
         );
         
-        // Update local state
+        // Update local state immediately for smooth UI
         if (source.droppableId === destination.droppableId) {
           // Moving within the same column
           const columnIndex = columns.findIndex(c => c.id === source.droppableId);
@@ -432,7 +431,7 @@ const BoardPage = () => {
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className={`flex overflow-x-auto pb-4 ${
+                className={`flex overflow-x-auto pb-4 transition-colors duration-300 ${
                   snapshot.isDraggingOver ? "bg-purple-50/20 dark:bg-purple-900/10 rounded-lg" : ""
                 }`}
                 style={{ minHeight: "calc(100vh - 180px)" }}
