@@ -46,14 +46,14 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className={`w-72 flex-shrink-0 mr-3 transition-transform duration-200 ease-in-out ${
+          className={`w-72 flex-shrink-0 mr-3 transition-transform duration-150 ease-out ${
             snapshot.isDragging ? "scale-[1.01] z-50" : ""
           }`}
           style={{
             ...provided.draggableProps.style,
           }}
         >
-          <div className={`bg-gray-100 dark:bg-gray-800 rounded-md shadow-md transition-shadow duration-200 ${
+          <div className={`bg-gray-100 dark:bg-gray-800 rounded-md shadow-md transition-shadow duration-150 ${
             snapshot.isDragging ? "shadow-lg" : ""
           }`}>
             <div
@@ -89,7 +89,7 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`min-h-[12rem] p-2 transition-colors duration-300 ease-in-out ${
+                  className={`min-h-[12rem] p-2 transition-colors duration-150 ease-out ${
                     snapshot.isDraggingOver 
                       ? "bg-purple-50/60 dark:bg-purple-900/40" 
                       : "bg-gray-100 dark:bg-gray-800"

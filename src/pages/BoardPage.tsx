@@ -92,7 +92,7 @@ const BoardPage = () => {
     loadData();
   }, [navigate, boardId, toast]);
 
-  // Enhance the drag and drop experience
+  // Optimistic UI update for drag and drop
   const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId, type } = result;
     
@@ -103,25 +103,16 @@ const BoardPage = () => {
     
     try {
       if (type === "column") {
-        // Handle column reordering
-        await moveColumn(draggableId, source.index, destination.index);
-        
-        // Update local state immediately for smooth UI
+        // Apply local state update immediately for smooth UI
         const newColumns = [...columns];
         const [movedColumn] = newColumns.splice(source.index, 1);
         newColumns.splice(destination.index, 0, movedColumn);
         setColumns(newColumns);
-      } else {
-        // Handle task reordering
-        await moveTask(
-          draggableId,
-          source.droppableId,
-          destination.droppableId,
-          source.index,
-          destination.index
-        );
         
-        // Update local state immediately for smooth UI
+        // Then send to backend
+        await moveColumn(draggableId, source.index, destination.index);
+      } else {
+        // Apply local state update immediately for task movements
         if (source.droppableId === destination.droppableId) {
           // Moving within the same column
           const columnIndex = columns.findIndex(c => c.id === source.droppableId);
@@ -161,6 +152,15 @@ const BoardPage = () => {
             setColumns(newColumns);
           }
         }
+        
+        // Then send to backend
+        await moveTask(
+          draggableId,
+          source.droppableId,
+          destination.droppableId,
+          source.index,
+          destination.index
+        );
       }
     } catch (error) {
       toast({
@@ -168,6 +168,11 @@ const BoardPage = () => {
         title: "Error",
         description: "Failed to update item position. Please try again."
       });
+      
+      // If there was an error, we could reload the data to reset to server state
+      // This is optional - you could also just keep the optimistic update
+      // const columnsData = await fetchBoardColumns(boardId!);
+      // setColumns(columnsData);
     }
   };
   

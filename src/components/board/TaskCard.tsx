@@ -32,7 +32,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, onDelete }) =>
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`mb-2 p-3 group transition-all duration-200 ease-in-out ${
+          className={`mb-2 p-3 group transition-all duration-150 ease-out ${
             snapshot.isDragging 
               ? "shadow-lg scale-[1.02] border-purple-300 dark:border-purple-700 z-10" 
               : "shadow-sm hover:shadow-md"
