@@ -110,7 +110,20 @@ const BoardPage = () => {
         setColumns(newColumns);
         
         // Then send to backend
-        await moveColumn(draggableId, source.index, destination.index);
+        moveColumn(draggableId, source.index, destination.index).catch(error => {
+          // If the backend update fails, revert to original state
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to update column position. Reverting changes."
+          });
+          
+          // Revert to original state
+          const revertedColumns = [...columns];
+          const [movedBackColumn] = revertedColumns.splice(destination.index, 1);
+          revertedColumns.splice(source.index, 0, movedBackColumn);
+          setColumns(revertedColumns);
+        });
       } else {
         // Apply local state update immediately for task movements
         if (source.droppableId === destination.droppableId) {
@@ -154,13 +167,22 @@ const BoardPage = () => {
         }
         
         // Then send to backend
-        await moveTask(
+        moveTask(
           draggableId,
           source.droppableId,
           destination.droppableId,
           source.index,
           destination.index
-        );
+        ).catch(error => {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to update task position. Please try again."
+          });
+          
+          // Note: we could reload the data here to reset to server state
+          // but that would cause a flicker. For this demo, we'll keep the optimistic update
+        });
       }
     } catch (error) {
       toast({
@@ -168,11 +190,6 @@ const BoardPage = () => {
         title: "Error",
         description: "Failed to update item position. Please try again."
       });
-      
-      // If there was an error, we could reload the data to reset to server state
-      // This is optional - you could also just keep the optimistic update
-      // const columnsData = await fetchBoardColumns(boardId!);
-      // setColumns(columnsData);
     }
   };
   

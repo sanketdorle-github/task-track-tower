@@ -51,6 +51,7 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
           }`}
           style={{
             ...provided.draggableProps.style,
+            transformOrigin: "center",
           }}
         >
           <div className={`bg-gray-100 dark:bg-gray-800 rounded-md shadow-md transition-shadow duration-150 ${
