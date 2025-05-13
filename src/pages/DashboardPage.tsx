@@ -6,8 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/layout/AppHeader";
 import BoardCard from "@/components/dashboard/BoardCard";
 import CreateBoardDialog from "@/components/dashboard/CreateBoardDialog";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchBoards, createBoard, updateBoard, deleteBoard } from "@/store/slices/boardsSlice";
+import { fetchBoards, createBoard, updateBoard, deleteBoard } from "@/utils/boardsData";
+import { Board } from "@/types/board";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,8 +22,9 @@ import {
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const dispatch = useAppDispatch();
-  const { boards, loading, error } = useAppSelector((state) => state.boards);
+  
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [loading, setLoading] = useState(false);
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editBoardId, setEditBoardId] = useState<string | null>(null);
@@ -38,21 +39,35 @@ const DashboardPage = () => {
       return;
     }
     
-    // Fetch boards using Redux thunk
-    dispatch(fetchBoards());
-  }, [navigate, dispatch]);
+    // Fetch boards using our utility function
+    const loadBoards = async () => {
+      setLoading(true);
+      try {
+        const data = await fetchBoards();
+        setBoards(data);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch boards. Please try again.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadBoards();
+  }, [navigate, toast]);
   
   const handleCreateBoard = async (title: string) => {
     try {
-      // Dispatch the createBoard action
-      const resultAction = await dispatch(createBoard(title));
-      if (createBoard.fulfilled.match(resultAction)) {
-        toast({
-          title: "Success",
-          description: "Board created successfully!",
-        });
-        return resultAction.payload;
-      }
+      const newBoard = await createBoard(title);
+      setBoards(prev => [...prev, newBoard]);
+      toast({
+        title: "Success",
+        description: "Board created successfully!",
+      });
+      return newBoard;
     } catch (error) {
       toast({
         variant: "destructive",
@@ -78,14 +93,12 @@ const DashboardPage = () => {
     if (!deleteBoardId) return;
     
     try {
-      // Dispatch the deleteBoard action
-      const resultAction = await dispatch(deleteBoard(deleteBoardId));
-      if (deleteBoard.fulfilled.match(resultAction)) {
-        toast({
-          title: "Success",
-          description: "Board deleted successfully!",
-        });
-      }
+      await deleteBoard(deleteBoardId);
+      setBoards(prev => prev.filter(board => board.id !== deleteBoardId));
+      toast({
+        title: "Success",
+        description: "Board deleted successfully!",
+      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -101,14 +114,18 @@ const DashboardPage = () => {
     if (!editBoardId) return;
     
     try {
-      // Dispatch the updateBoard action
-      const resultAction = await dispatch(updateBoard({ id: editBoardId, title }));
-      if (updateBoard.fulfilled.match(resultAction)) {
-        toast({
-          title: "Success",
-          description: "Board updated successfully!",
-        });
-      }
+      const updatedBoard = await updateBoard(editBoardId, title);
+      setBoards(prev => 
+        prev.map(board => 
+          board.id === editBoardId 
+            ? { ...board, title: updatedBoard.title } 
+            : board
+        )
+      );
+      toast({
+        title: "Success",
+        description: "Board updated successfully!",
+      });
     } catch (error) {
       toast({
         variant: "destructive",

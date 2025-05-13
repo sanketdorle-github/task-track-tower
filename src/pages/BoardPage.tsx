@@ -9,7 +9,7 @@ import BoardColumn from "@/components/board/BoardColumn";
 import TaskDialog from "@/components/board/TaskDialog";
 import ColumnDialog from "@/components/board/ColumnDialog";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchBoards } from "@/utils/boardsData";
 import { 
   fetchBoardColumns, 
   createColumn, 
@@ -20,7 +20,7 @@ import {
   deleteTask,
   moveTask,
   moveColumn
-} from "@/store/slices/tasksSlice";
+} from "@/utils/tasksData";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,16 +31,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Task } from "@/types/board";
+import { Board, Column, Task } from "@/types/board";
 
 const BoardPage = () => {
   const navigate = useNavigate();
   const { boardId } = useParams<{ boardId: string }>();
   const { toast } = useToast();
-  const dispatch = useAppDispatch();
   
-  const { boards } = useAppSelector((state) => state.boards);
-  const { columns, loading } = useAppSelector((state) => state.tasks);
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [columns, setColumns] = useState<Column[]>([]);
+  const [loading, setLoading] = useState(false);
   
   const board = boards.find(b => b.id === boardId);
   
@@ -67,13 +67,34 @@ const BoardPage = () => {
       return;
     }
     
-    if (boardId) {
-      dispatch(fetchBoardColumns(boardId));
-    }
-  }, [navigate, boardId, dispatch]);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Load boards
+        const boardsData = await fetchBoards();
+        setBoards(boardsData);
+        
+        // Load columns and tasks if we have a board ID
+        if (boardId) {
+          const columnsData = await fetchBoardColumns(boardId);
+          setColumns(columnsData);
+        }
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error", 
+          description: "Failed to load data. Please try again."
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [navigate, boardId, toast]);
 
   // Handle drag and drop
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId, type } = result;
     
     // Dropped outside the list or at the same position
@@ -81,24 +102,74 @@ const BoardPage = () => {
       return;
     }
     
-    if (type === "column") {
-      // Handle column reordering
-      dispatch(moveColumn({
-        columnId: draggableId,
-        sourceIndex: source.index,
-        destIndex: destination.index
-      }));
-      return;
+    try {
+      if (type === "column") {
+        // Handle column reordering
+        await moveColumn(draggableId, source.index, destination.index);
+        
+        // Update local state
+        const newColumns = [...columns];
+        const [movedColumn] = newColumns.splice(source.index, 1);
+        newColumns.splice(destination.index, 0, movedColumn);
+        setColumns(newColumns);
+      } else {
+        // Handle task reordering
+        await moveTask(
+          draggableId,
+          source.droppableId,
+          destination.droppableId,
+          source.index,
+          destination.index
+        );
+        
+        // Update local state
+        if (source.droppableId === destination.droppableId) {
+          // Moving within the same column
+          const columnIndex = columns.findIndex(c => c.id === source.droppableId);
+          if (columnIndex !== -1) {
+            const newColumns = [...columns];
+            const column = { ...newColumns[columnIndex] };
+            const tasks = [...column.tasks];
+            const [movedTask] = tasks.splice(source.index, 1);
+            tasks.splice(destination.index, 0, movedTask);
+            column.tasks = tasks;
+            newColumns[columnIndex] = column;
+            setColumns(newColumns);
+          }
+        } else {
+          // Moving between different columns
+          const sourceColumnIndex = columns.findIndex(c => c.id === source.droppableId);
+          const destColumnIndex = columns.findIndex(c => c.id === destination.droppableId);
+          
+          if (sourceColumnIndex !== -1 && destColumnIndex !== -1) {
+            const newColumns = [...columns];
+            const sourceColumn = { ...newColumns[sourceColumnIndex] };
+            const destColumn = { ...newColumns[destColumnIndex] };
+            
+            const sourceTasks = [...sourceColumn.tasks];
+            const destTasks = [...destColumn.tasks];
+            
+            const [movedTask] = sourceTasks.splice(source.index, 1);
+            movedTask.columnId = destination.droppableId;
+            destTasks.splice(destination.index, 0, movedTask);
+            
+            sourceColumn.tasks = sourceTasks;
+            destColumn.tasks = destTasks;
+            
+            newColumns[sourceColumnIndex] = sourceColumn;
+            newColumns[destColumnIndex] = destColumn;
+            
+            setColumns(newColumns);
+          }
+        }
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update item position. Please try again."
+      });
     }
-    
-    // Handle task reordering
-    dispatch(moveTask({
-      taskId: draggableId,
-      sourceColumnId: source.droppableId,
-      destColumnId: destination.droppableId,
-      sourceIndex: source.index,
-      destIndex: destination.index
-    }));
   };
   
   // Task CRUD operations
@@ -131,14 +202,21 @@ const BoardPage = () => {
     
     try {
       const { taskId, columnId } = deleteTaskInfo;
+      await deleteTask(taskId, columnId);
       
-      const resultAction = await dispatch(deleteTask({ id: taskId, columnId }));
-      if (deleteTask.fulfilled.match(resultAction)) {
-        toast({
-          title: "Success",
-          description: "Task deleted successfully!",
-        });
-      }
+      // Update local state
+      setColumns(prevColumns => 
+        prevColumns.map(column => 
+          column.id === columnId
+            ? { ...column, tasks: column.tasks.filter(task => task.id !== taskId) }
+            : column
+        )
+      );
+      
+      toast({
+        title: "Success",
+        description: "Task deleted successfully!",
+      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -155,33 +233,54 @@ const BoardPage = () => {
     try {
       if (isEditMode && taskId && columnId) {
         // Update existing task
-        const resultAction = await dispatch(updateTask({
-          id: taskId,
+        const result = await updateTask(
+          taskId,
           columnId,
-          title: values.title,
-          description: values.description
-        }));
+          values.title,
+          values.description
+        );
         
-        if (updateTask.fulfilled.match(resultAction)) {
-          toast({
-            title: "Success",
-            description: "Task updated successfully!",
-          });
-        }
+        // Update local state
+        setColumns(prevColumns => 
+          prevColumns.map(column => 
+            column.id === columnId
+              ? {
+                  ...column,
+                  tasks: column.tasks.map(task => 
+                    task.id === taskId
+                      ? { ...task, title: values.title, description: values.description }
+                      : task
+                  )
+                }
+              : column
+          )
+        );
+        
+        toast({
+          title: "Success",
+          description: "Task updated successfully!",
+        });
       } else if (columnId) {
         // Create new task
-        const resultAction = await dispatch(createTask({
+        const newTask = await createTask(
           columnId,
-          title: values.title,
-          description: values.description
-        }));
+          values.title,
+          values.description
+        );
         
-        if (createTask.fulfilled.match(resultAction)) {
-          toast({
-            title: "Success",
-            description: "Task created successfully!",
-          });
-        }
+        // Update local state
+        setColumns(prevColumns => 
+          prevColumns.map(column => 
+            column.id === columnId
+              ? { ...column, tasks: [...column.tasks, newTask] }
+              : column
+          )
+        );
+        
+        toast({
+          title: "Success",
+          description: "Task created successfully!",
+        });
       }
     } catch (error) {
       toast({
@@ -216,14 +315,15 @@ const BoardPage = () => {
     if (!deleteColumnId) return;
     
     try {
-      const resultAction = await dispatch(deleteColumn(deleteColumnId));
+      await deleteColumn(deleteColumnId);
       
-      if (deleteColumn.fulfilled.match(resultAction)) {
-        toast({
-          title: "Success",
-          description: "Column deleted successfully!",
-        });
-      }
+      // Update local state
+      setColumns(prevColumns => prevColumns.filter(column => column.id !== deleteColumnId));
+      
+      toast({
+        title: "Success",
+        description: "Column deleted successfully!",
+      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -240,30 +340,32 @@ const BoardPage = () => {
     try {
       if (isColumnEditMode && columnId) {
         // Update existing column
-        const resultAction = await dispatch(updateColumn({
-          id: columnId,
-          title: values.title
-        }));
+        await updateColumn(columnId, values.title);
         
-        if (updateColumn.fulfilled.match(resultAction)) {
-          toast({
-            title: "Success",
-            description: "Column updated successfully!",
-          });
-        }
+        // Update local state
+        setColumns(prevColumns => 
+          prevColumns.map(column => 
+            column.id === columnId
+              ? { ...column, title: values.title }
+              : column
+          )
+        );
+        
+        toast({
+          title: "Success",
+          description: "Column updated successfully!",
+        });
       } else if (boardId) {
         // Create new column
-        const resultAction = await dispatch(createColumn({
-          title: values.title,
-          boardId
-        }));
+        const newColumn = await createColumn(values.title, boardId);
         
-        if (createColumn.fulfilled.match(resultAction)) {
-          toast({
-            title: "Success",
-            description: "Column created successfully!",
-          });
-        }
+        // Update local state
+        setColumns(prevColumns => [...prevColumns, newColumn]);
+        
+        toast({
+          title: "Success",
+          description: "Column created successfully!",
+        });
       }
     } catch (error) {
       toast({
