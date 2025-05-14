@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PlusCircle } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/layout/AppHeader";
 import BoardCard from "@/components/dashboard/BoardCard";
 import CreateBoardDialog from "@/components/dashboard/CreateBoardDialog";
-import { fetchBoards, createBoard, updateBoard, deleteBoard } from "@/utils/boardsData";
+import { fetchBoards, createBoard, updateBoard, deleteBoard, reorderBoards } from "@/utils/boardsData";
 import { Board } from "@/types/board";
 import {
   AlertDialog,
@@ -138,6 +139,45 @@ const DashboardPage = () => {
     }
   };
 
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    // If dropped outside a droppable area or at the same position
+    if (!destination || 
+        (destination.droppableId === source.droppableId && 
+         destination.index === source.index)) {
+      return;
+    }
+
+    try {
+      // Optimistically update the UI
+      const reorderedBoards = [...boards];
+      const [movedBoard] = reorderedBoards.splice(source.index, 1);
+      reorderedBoards.splice(destination.index, 0, movedBoard);
+      setBoards(reorderedBoards);
+      
+      // Then send to backend
+      reorderBoards(draggableId, source.index, destination.index).catch(error => {
+        // If the backend update fails, revert to original state
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to update board position. Reverting changes."
+        });
+        
+        // Revert to original state
+        const originalBoards = [...boards];
+        setBoards(originalBoards);
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update board position. Please try again."
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <AppHeader onCreateBoardClick={() => setCreateDialogOpen(true)} />
@@ -172,18 +212,43 @@ const DashboardPage = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {boards.map((board) => (
-              <BoardCard
-                key={board.id}
-                id={board.id}
-                title={board.title}
-                color={board.color}
-                onEdit={handleEditBoard}
-                onDelete={handleDeleteBoard}
-              />
-            ))}
-          </div>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="boards" direction="horizontal">
+              {(provided) => (
+                <div 
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                >
+                  {boards.map((board, index) => (
+                    <Draggable key={board.id} draggableId={board.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          style={{
+                            ...provided.draggableProps.style,
+                            transformOrigin: "center", 
+                          }}
+                          className={snapshot.isDragging ? "z-10" : ""}
+                        >
+                          <BoardCard
+                            id={board.id}
+                            title={board.title}
+                            color={board.color}
+                            onEdit={handleEditBoard}
+                            onDelete={handleDeleteBoard}
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         )}
       </main>
       

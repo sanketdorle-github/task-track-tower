@@ -43,7 +43,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 
   return (
     <Card 
-      className="cursor-pointer group transition-all hover:shadow-md hover:scale-[1.02] overflow-hidden dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600"
+      className="cursor-pointer group transition-all duration-150 ease-out hover:shadow-md hover:scale-[1.02] overflow-hidden dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600"
       onClick={handleClick}
     >
       <div className={`h-2 ${color}`} />

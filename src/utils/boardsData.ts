@@ -75,3 +75,16 @@ export const deleteBoard = async (id: string): Promise<string> => {
   boards = boards.filter(board => board.id !== id);
   return mockApiCall(id, 500);
 };
+
+export const reorderBoards = async (
+  boardId: string, 
+  sourceIndex: number, 
+  destinationIndex: number
+): Promise<Board[]> => {
+  const reorderedBoards = [...boards];
+  const [movedBoard] = reorderedBoards.splice(sourceIndex, 1);
+  reorderedBoards.splice(destinationIndex, 0, movedBoard);
+  
+  boards = reorderedBoards;
+  return mockApiCall(boards);
+};
