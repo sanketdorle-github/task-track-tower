@@ -22,6 +22,26 @@ let boards: Board[] = [
     id: "4",
     title: "Personal Tasks",
     color: "bg-pink-500"
+  },
+  {
+    id: "5",
+    title: "Product Roadmap",
+    color: "bg-teal-500"
+  },
+  {
+    id: "6",
+    title: "Client Projects",
+    color: "bg-green-500"
+  },
+  {
+    id: "7",
+    title: "Content Calendar",
+    color: "bg-amber-500"
+  },
+  {
+    id: "8",
+    title: "Team OKRs",
+    color: "bg-red-500"
   }
 ];
 
@@ -47,7 +67,11 @@ export const createBoard = async (title: string): Promise<Board> => {
     "bg-indigo-500",
     "bg-pink-500",
     "bg-teal-500",
-    "bg-green-500"
+    "bg-green-500",
+    "bg-amber-500",
+    "bg-red-500",
+    "bg-orange-500",
+    "bg-yellow-500"
   ];
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
   
