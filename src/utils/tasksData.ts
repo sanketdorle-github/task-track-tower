@@ -192,15 +192,28 @@ export const moveColumn = async (columnId: string, sourceIndex: number, destInde
   for (const boardId in columnsMap) {
     const columnIndex = columnsMap[boardId].findIndex(c => c.id === columnId);
     if (columnIndex !== -1) {
-      // Reorder columns array
-      const [movedColumn] = columnsMap[boardId].splice(sourceIndex, 1);
-      columnsMap[boardId].splice(destIndex, 0, movedColumn);
+      // Create a copy of the columns array for smoother visual transitions
+      const columns = [...columnsMap[boardId]];
       
-      return mockApiCall({
-        columnId,
-        sourceIndex,
-        destIndex
-      });
+      // Extract the column to be moved but don't modify the array yet
+      const movedColumn = columns[sourceIndex];
+      
+      // Update the columnsMap with the reordered columns - do this in a single operation
+      // to reduce visual jitter
+      const newColumns = [...columns];
+      newColumns.splice(sourceIndex, 1);
+      newColumns.splice(destIndex, 0, movedColumn);
+      columnsMap[boardId] = newColumns;
+      
+      // Return a promise with a slightly reduced delay to make animations smoother
+      return mockApiCall(
+        {
+          columnId,
+          sourceIndex,
+          destIndex
+        },
+        300 // Reduced delay for smoother transitions
+      );
     }
   }
   
