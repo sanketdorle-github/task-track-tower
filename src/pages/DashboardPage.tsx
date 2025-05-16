@@ -31,6 +31,7 @@ const DashboardPage = () => {
   const [editBoardId, setEditBoardId] = useState<string | null>(null);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
   const [boardToEdit, setBoardToEdit] = useState<{ id: string, title: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   // Check authentication
   useEffect(() => {
@@ -139,7 +140,12 @@ const DashboardPage = () => {
     }
   };
 
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
   const handleDragEnd = async (result: DropResult) => {
+    setIsDragging(false);
     const { destination, source, draggableId } = result;
 
     // If dropped outside a droppable area or at the same position
@@ -156,8 +162,11 @@ const DashboardPage = () => {
       reorderedBoards.splice(destination.index, 0, movedBoard);
       setBoards(reorderedBoards);
       
-      // Then send to backend
-      reorderBoards(draggableId, source.index, destination.index).catch(error => {
+      console.log(`Reordering board ${draggableId} from ${source.index} to ${destination.index}`);
+      
+      // Send reorder request to the backend
+      await reorderBoards(draggableId, source.index, destination.index).catch(error => {
+        console.error("Reorder error:", error);
         // If the backend update fails, revert to original state
         toast({
           variant: "destructive",
@@ -165,15 +174,22 @@ const DashboardPage = () => {
           description: "Failed to update board position. Reverting changes."
         });
         
-        // Revert to original state
-        const originalBoards = [...boards];
-        setBoards(originalBoards);
+        // Reload boards to get the original order
+        fetchBoards().then(originalBoards => {
+          setBoards(originalBoards);
+        });
       });
     } catch (error) {
+      console.error("Drag and drop error:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to update board position. Please try again."
+      });
+      
+      // Reload boards to get the original order
+      fetchBoards().then(originalBoards => {
+        setBoards(originalBoards);
       });
     }
   };
@@ -212,16 +228,26 @@ const DashboardPage = () => {
             </button>
           </div>
         ) : (
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="boards" direction="horizontal">
-              {(provided) => (
+          <DragDropContext 
+            onDragStart={handleDragStart} 
+            onDragEnd={handleDragEnd}
+          >
+            <Droppable droppableId="boards" direction="horizontal" type="BOARD">
+              {(provided, snapshot) => (
                 <div 
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                  className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 ${
+                    snapshot.isDraggingOver ? "bg-gray-100 dark:bg-gray-800/50 rounded-lg p-2" : ""
+                  }`}
                 >
                   {boards.map((board, index) => (
-                    <Draggable key={board.id} draggableId={board.id} index={index}>
+                    <Draggable 
+                      key={board.id} 
+                      draggableId={board.id} 
+                      index={index}
+                      disableInteractiveElementBlocking={true}
+                    >
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
@@ -231,14 +257,18 @@ const DashboardPage = () => {
                             ...provided.draggableProps.style,
                             transformOrigin: "center", 
                           }}
-                          className={snapshot.isDragging ? "z-10" : ""}
+                          className={`transition-all duration-200 ${
+                            snapshot.isDragging 
+                              ? "z-10 scale-105 shadow-xl" 
+                              : ""
+                          }`}
                         >
                           <BoardCard
                             id={board.id}
                             title={board.title}
                             color={board.color}
-                            onEdit={handleEditBoard}
-                            onDelete={handleDeleteBoard}
+                            onEdit={!isDragging ? handleEditBoard : undefined}
+                            onDelete={!isDragging ? handleDeleteBoard : undefined}
                           />
                         </div>
                       )}

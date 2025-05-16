@@ -105,10 +105,16 @@ export const reorderBoards = async (
   sourceIndex: number, 
   destinationIndex: number
 ): Promise<Board[]> => {
+  console.log(`Reordering board ${boardId} from ${sourceIndex} to ${destinationIndex}`);
+  
+  // Create a copy of the boards array for reordering
   const reorderedBoards = [...boards];
   const [movedBoard] = reorderedBoards.splice(sourceIndex, 1);
   reorderedBoards.splice(destinationIndex, 0, movedBoard);
   
+  // Update the global boards array
   boards = reorderedBoards;
-  return mockApiCall(boards);
+  
+  // Return the updated boards after a delay
+  return mockApiCall([...boards]);
 };
