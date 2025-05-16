@@ -99,22 +99,3 @@ export const deleteBoard = async (id: string): Promise<string> => {
   boards = boards.filter(board => board.id !== id);
   return mockApiCall(id, 500);
 };
-
-export const reorderBoards = async (
-  boardId: string, 
-  sourceIndex: number, 
-  destinationIndex: number
-): Promise<Board[]> => {
-  console.log(`Reordering board ${boardId} from ${sourceIndex} to ${destinationIndex}`);
-  
-  // Create a copy of the boards array for reordering
-  const reorderedBoards = [...boards];
-  const [movedBoard] = reorderedBoards.splice(sourceIndex, 1);
-  reorderedBoards.splice(destinationIndex, 0, movedBoard);
-  
-  // Update the global boards array
-  boards = reorderedBoards;
-  
-  // Return the updated boards after a delay
-  return mockApiCall([...boards]);
-};

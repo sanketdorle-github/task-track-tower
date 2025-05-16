@@ -2,12 +2,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PlusCircle } from "lucide-react";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader from "@/components/layout/AppHeader";
 import BoardCard from "@/components/dashboard/BoardCard";
 import CreateBoardDialog from "@/components/dashboard/CreateBoardDialog";
-import { fetchBoards, createBoard, updateBoard, deleteBoard, reorderBoards } from "@/utils/boardsData";
+import { fetchBoards, createBoard, updateBoard, deleteBoard } from "@/utils/boardsData";
 import { Board } from "@/types/board";
 import {
   AlertDialog,
@@ -31,7 +30,6 @@ const DashboardPage = () => {
   const [editBoardId, setEditBoardId] = useState<string | null>(null);
   const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
   const [boardToEdit, setBoardToEdit] = useState<{ id: string, title: string } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   
   // Check authentication
   useEffect(() => {
@@ -140,60 +138,6 @@ const DashboardPage = () => {
     }
   };
 
-  const handleDragStart = () => {
-    setIsDragging(true);
-  };
-
-  const handleDragEnd = async (result: DropResult) => {
-    setIsDragging(false);
-    const { destination, source, draggableId } = result;
-
-    // If dropped outside a droppable area or at the same position
-    if (!destination || 
-        (destination.droppableId === source.droppableId && 
-         destination.index === source.index)) {
-      return;
-    }
-
-    try {
-      // Optimistically update the UI
-      const reorderedBoards = [...boards];
-      const [movedBoard] = reorderedBoards.splice(source.index, 1);
-      reorderedBoards.splice(destination.index, 0, movedBoard);
-      setBoards(reorderedBoards);
-      
-      console.log(`Reordering board ${draggableId} from ${source.index} to ${destination.index}`);
-      
-      // Send reorder request to the backend
-      await reorderBoards(draggableId, source.index, destination.index).catch(error => {
-        console.error("Reorder error:", error);
-        // If the backend update fails, revert to original state
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to update board position. Reverting changes."
-        });
-        
-        // Reload boards to get the original order
-        fetchBoards().then(originalBoards => {
-          setBoards(originalBoards);
-        });
-      });
-    } catch (error) {
-      console.error("Drag and drop error:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update board position. Please try again."
-      });
-      
-      // Reload boards to get the original order
-      fetchBoards().then(originalBoards => {
-        setBoards(originalBoards);
-      });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <AppHeader onCreateBoardClick={() => setCreateDialogOpen(true)} />
@@ -228,57 +172,18 @@ const DashboardPage = () => {
             </button>
           </div>
         ) : (
-          <DragDropContext 
-            onDragStart={handleDragStart} 
-            onDragEnd={handleDragEnd}
-          >
-            <Droppable droppableId="boards" direction="horizontal" type="BOARD">
-              {(provided, snapshot) => (
-                <div 
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 ${
-                    snapshot.isDraggingOver ? "bg-gray-100 dark:bg-gray-800/50 rounded-lg p-2" : ""
-                  }`}
-                >
-                  {boards.map((board, index) => (
-                    <Draggable 
-                      key={board.id} 
-                      draggableId={board.id} 
-                      index={index}
-                      disableInteractiveElementBlocking={true}
-                    >
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          style={{
-                            ...provided.draggableProps.style,
-                            transformOrigin: "center", 
-                          }}
-                          className={`transition-all duration-200 ${
-                            snapshot.isDragging 
-                              ? "z-10 scale-105 shadow-xl" 
-                              : ""
-                          }`}
-                        >
-                          <BoardCard
-                            id={board.id}
-                            title={board.title}
-                            color={board.color}
-                            onEdit={!isDragging ? handleEditBoard : undefined}
-                            onDelete={!isDragging ? handleDeleteBoard : undefined}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {boards.map((board) => (
+              <BoardCard
+                key={board.id}
+                id={board.id}
+                title={board.title}
+                color={board.color}
+                onEdit={handleEditBoard}
+                onDelete={handleDeleteBoard}
+              />
+            ))}
+          </div>
         )}
       </main>
       
