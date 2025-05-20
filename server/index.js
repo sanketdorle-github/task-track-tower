@@ -293,7 +293,7 @@ app.post('/api/tasks/:taskId/move', async (req, res) => {
     const { taskId } = req.params;
     const { sourceColumnId, destColumnId, sourceIndex, destIndex } = req.body;
     
-    // Get the source column and task
+    // Find source column
     const sourceColumn = await db.collection("columns").findOne({ _id: new ObjectId(sourceColumnId) });
     if (!sourceColumn) {
       return res.status(404).json({ message: "Source column not found" });
@@ -305,39 +305,60 @@ app.post('/api/tasks/:taskId/move', async (req, res) => {
       return res.status(404).json({ message: "Task not found in source column" });
     }
     
+    // Get the task we want to move
     const task = sourceColumn.tasks[taskIndex];
     
     // If moving within the same column
     if (sourceColumnId === destColumnId) {
-      // Reorder tasks in the column
-      const newTasks = [...sourceColumn.tasks];
-      newTasks.splice(taskIndex, 1);
+      // Remove task from its current position
+      await db.collection("columns").updateOne(
+        { _id: new ObjectId(sourceColumnId) },
+        { $pull: { tasks: { id: taskId } } }
+      );
+      
+      // Find the column again after removing the task
+      const updatedColumn = await db.collection("columns").findOne({ _id: new ObjectId(sourceColumnId) });
+      const newTasks = updatedColumn.tasks;
+      
+      // Insert task at the destination position
       newTasks.splice(destIndex, 0, task);
       
+      // Update the column with the new task order
       await db.collection("columns").updateOne(
         { _id: new ObjectId(sourceColumnId) },
         { $set: { tasks: newTasks } }
       );
     } else {
+      // Moving between different columns
+      
       // Remove task from source column
       await db.collection("columns").updateOne(
         { _id: new ObjectId(sourceColumnId) },
         { $pull: { tasks: { id: taskId } } }
       );
       
-      // Get destination column
+      // Find destination column
       const destColumn = await db.collection("columns").findOne({ _id: new ObjectId(destColumnId) });
       if (!destColumn) {
+        // If destination column not found, put the task back in the source column
+        await db.collection("columns").updateOne(
+          { _id: new ObjectId(sourceColumnId) },
+          { $push: { tasks: task } }
+        );
         return res.status(404).json({ message: "Destination column not found" });
       }
       
-      // Add task to destination column at the right position
-      const newTasks = [...destColumn.tasks];
-      newTasks.splice(destIndex, 0, task);
+      // Update the task's columnId
+      task.columnId = destColumnId;
       
+      // Insert task at the destination position in the destination column
+      const destTasks = destColumn.tasks;
+      destTasks.splice(destIndex, 0, task);
+      
+      // Update the destination column with the new tasks array
       await db.collection("columns").updateOne(
         { _id: new ObjectId(destColumnId) },
-        { $set: { tasks: newTasks } }
+        { $set: { tasks: destTasks } }
       );
     }
     
