@@ -1,101 +1,62 @@
 
+import axios from 'axios';
 import { Board } from '../types/board';
 
-// Mock data for boards
-let boards: Board[] = [
-  {
-    id: "1",
-    title: "Project Alpha",
-    color: "bg-purple-500"
-  },
-  {
-    id: "2",
-    title: "Marketing Campaign",
-    color: "bg-blue-500"
-  },
-  {
-    id: "3",
-    title: "Website Redesign",
-    color: "bg-indigo-500"
-  },
-  {
-    id: "4",
-    title: "Personal Tasks",
-    color: "bg-pink-500"
-  },
-  {
-    id: "5",
-    title: "Product Roadmap",
-    color: "bg-teal-500"
-  },
-  {
-    id: "6",
-    title: "Client Projects",
-    color: "bg-green-500"
-  },
-  {
-    id: "7",
-    title: "Content Calendar",
-    color: "bg-amber-500"
-  },
-  {
-    id: "8",
-    title: "Team OKRs",
-    color: "bg-red-500"
-  }
-];
+const API_URL = 'http://localhost:5000/api';
 
-// Simulating API calls with a delay
-const mockApiCall = <T>(data: T, delay = 800): Promise<T> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(data);
-    }, delay);
-  });
+// Simulating API calls with a delay and axios
+const mockApiCall = async <T>(promise: Promise<T>): Promise<T> => {
+  try {
+    // Add artificial delay to simulate network latency
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const result = await promise;
+    return result;
+  } catch (error) {
+    console.error("API Error:", error);
+    throw error;
+  }
 };
 
 // Functions for board operations
 export const fetchBoards = async (): Promise<Board[]> => {
-  return mockApiCall(boards);
+  return mockApiCall(
+    axios.get(`${API_URL}/boards`).then(response => {
+      // Transform MongoDB _id to id for frontend compatibility
+      return response.data.map((board: any) => ({
+        id: board._id,
+        title: board.title,
+        color: board.color
+      }));
+    })
+  );
 };
 
 export const createBoard = async (title: string): Promise<Board> => {
-  // Generate a random color
-  const colors = [
-    "bg-purple-500",
-    "bg-blue-500",
-    "bg-indigo-500",
-    "bg-pink-500",
-    "bg-teal-500",
-    "bg-green-500",
-    "bg-amber-500",
-    "bg-red-500",
-    "bg-orange-500",
-    "bg-yellow-500"
-  ];
-  const randomColor = colors[Math.floor(Math.random() * colors.length)];
-  
-  const newBoard: Board = {
-    id: `board-${Date.now()}`,
-    title,
-    color: randomColor,
-  };
-  
-  boards = [...boards, newBoard];
-  return mockApiCall(newBoard);
+  return mockApiCall(
+    axios.post(`${API_URL}/boards`, { title }).then(response => {
+      return {
+        id: response.data.id,
+        title: response.data.title,
+        color: response.data.color
+      };
+    })
+  );
 };
 
 export const updateBoard = async (id: string, title: string): Promise<Board> => {
-  const board = boards.find(b => b.id === id);
-  if (!board) {
-    throw new Error(`Board with id ${id} not found`);
-  }
-  
-  board.title = title;
-  return mockApiCall(board);
+  return mockApiCall(
+    axios.put(`${API_URL}/boards/${id}`, { title }).then(response => {
+      return {
+        id: response.data._id,
+        title: response.data.title,
+        color: response.data.color
+      };
+    })
+  );
 };
 
 export const deleteBoard = async (id: string): Promise<string> => {
-  boards = boards.filter(board => board.id !== id);
-  return mockApiCall(id, 500);
+  return mockApiCall(
+    axios.delete(`${API_URL}/boards/${id}`).then(() => id)
+  );
 };
