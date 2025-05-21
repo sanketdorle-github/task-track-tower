@@ -1,13 +1,15 @@
 
-const { ObjectId } = require('mongodb');
+const mongoose = require('mongoose');
+const Board = require('../models/Board');
+const Column = require('../models/Column');
 
-async function initDummyData(db) {
+async function initDummyData() {
   try {
     // Check if boards collection is empty
-    const boardsCount = await db.collection("boards").countDocuments();
+    const boardsCount = await Board.countDocuments();
     if (boardsCount === 0) {
       // Insert dummy boards
-      const boardsResult = await db.collection("boards").insertMany([
+      const boards = await Board.create([
         { title: "Project Alpha", color: "bg-purple-500" },
         { title: "Marketing Campaign", color: "bg-blue-500" },
         { title: "Website Redesign", color: "bg-indigo-500" },
@@ -17,40 +19,40 @@ async function initDummyData(db) {
       console.log("Inserted dummy boards");
       
       // Get the first board's ID
-      const firstBoardId = boardsResult.insertedIds[0];
+      const firstBoardId = boards[0]._id;
       
       // Insert dummy columns for the first board
-      const columnsResult = await db.collection("columns").insertMany([
+      await Column.create([
         {
           title: "To Do",
-          boardId: firstBoardId.toString(),
+          boardId: firstBoardId,
           tasks: [
-            { id: new ObjectId().toString(), title: "Research competitors", description: "Look at similar products and identify strengths and weaknesses" },
-            { id: new ObjectId().toString(), title: "Create wireframes", description: "Design preliminary wireframes for key screens" },
-            { id: new ObjectId().toString(), title: "Setup development environment" }
+            { title: "Research competitors", description: "Look at similar products and identify strengths and weaknesses" },
+            { title: "Create wireframes", description: "Design preliminary wireframes for key screens" },
+            { title: "Setup development environment", description: "" }
           ]
         },
         {
           title: "In Progress",
-          boardId: firstBoardId.toString(),
+          boardId: firstBoardId,
           tasks: [
-            { id: new ObjectId().toString(), title: "Implement authentication", description: "Create login and registration flows" },
-            { id: new ObjectId().toString(), title: "Build dashboard UI" }
+            { title: "Implement authentication", description: "Create login and registration flows" },
+            { title: "Build dashboard UI", description: "" }
           ]
         },
         {
           title: "Review",
-          boardId: firstBoardId.toString(),
+          boardId: firstBoardId,
           tasks: [
-            { id: new ObjectId().toString(), title: "Code review: API endpoints", description: "Review and optimize API endpoints" }
+            { title: "Code review: API endpoints", description: "Review and optimize API endpoints" }
           ]
         },
         {
           title: "Done",
-          boardId: firstBoardId.toString(),
+          boardId: firstBoardId,
           tasks: [
-            { id: new ObjectId().toString(), title: "Setup project repo", description: "Initialize repository and configure CI/CD" },
-            { id: new ObjectId().toString(), title: "Create project plan" }
+            { title: "Setup project repo", description: "Initialize repository and configure CI/CD" },
+            { title: "Create project plan", description: "" }
           ]
         }
       ]);

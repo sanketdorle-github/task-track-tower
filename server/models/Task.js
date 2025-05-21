@@ -1,19 +1,8 @@
 
-const { ObjectId } = require('mongodb');
-const db = require('../config/db');
-
-// Task schema structure (stored as embedded documents in columns collection)
-const taskSchema = {
-  id: String,
-  title: String,
-  description: String
-};
+const mongoose = require('mongoose');
+const Column = require('./Column');
 
 class Task {
-  static getCollection() {
-    return db.getDb().collection("columns");
-  }
-
   static async create(columnId, title, description) {
     // Validate required fields
     if (!columnId) {
@@ -24,17 +13,27 @@ class Task {
     }
     
     const task = { 
-      id: new ObjectId().toString(),
       title, 
       description: description || "" 
     };
     
-    await this.getCollection().updateOne(
-      { _id: new ObjectId(columnId) },
-      { $push: { tasks: task } }
-    );
+    // Find column and push new task
+    const column = await Column.findById(columnId);
+    if (!column) {
+      throw new Error("Column not found");
+    }
     
-    return { ...task, columnId };
+    column.tasks.push(task);
+    await column.save();
+    
+    // Return the newly created task with its ID
+    const newTask = column.tasks[column.tasks.length - 1];
+    return { 
+      id: newTask._id.toString(),
+      columnId,
+      title,
+      description: description || ""
+    };
   }
 
   static async update(columnId, taskId, title, description) {
@@ -46,15 +45,23 @@ class Task {
       throw new Error("Task title is required");
     }
     
-    await this.getCollection().updateOne(
-      { _id: new ObjectId(columnId), "tasks.id": taskId },
-      { $set: { 
-        "tasks.$.title": title, 
-        "tasks.$.description": description || "" 
-      }}
-    );
+    // Find and update the task
+    const column = await Column.findById(columnId);
+    if (!column) {
+      throw new Error("Column not found");
+    }
     
-    return { id: taskId, columnId, title, description };
+    const taskIndex = column.tasks.findIndex(t => t._id.toString() === taskId);
+    if (taskIndex === -1) {
+      throw new Error("Task not found");
+    }
+    
+    column.tasks[taskIndex].title = title;
+    column.tasks[taskIndex].description = description || "";
+    
+    await column.save();
+    
+    return { id: taskId, columnId, title, description: description || "" };
   }
 
   static async delete(columnId, taskId) {
@@ -63,10 +70,19 @@ class Task {
       throw new Error("Column ID and Task ID are required");
     }
     
-    await this.getCollection().updateOne(
-      { _id: new ObjectId(columnId) },
-      { $pull: { tasks: { id: taskId } } }
-    );
+    // Find and remove the task
+    const column = await Column.findById(columnId);
+    if (!column) {
+      throw new Error("Column not found");
+    }
+    
+    const taskIndex = column.tasks.findIndex(t => t._id.toString() === taskId);
+    if (taskIndex === -1) {
+      throw new Error("Task not found");
+    }
+    
+    column.tasks.pull({ _id: taskId });
+    await column.save();
     
     return { id: taskId, columnId };
   }
@@ -78,72 +94,46 @@ class Task {
     }
     
     // Find source column
-    const sourceColumn = await this.getCollection().findOne({ _id: new ObjectId(sourceColumnId) });
+    const sourceColumn = await Column.findById(sourceColumnId);
     if (!sourceColumn) {
       throw new Error("Source column not found");
     }
     
     // Find the task in the source column
-    const taskIndex = sourceColumn.tasks.findIndex(t => t.id === taskId);
+    const taskIndex = sourceColumn.tasks.findIndex(t => t._id.toString() === taskId);
     if (taskIndex === -1) {
       throw new Error("Task not found in source column");
     }
     
     // Get the task we want to move
-    const task = sourceColumn.tasks[taskIndex];
+    const task = sourceColumn.tasks[taskIndex].toObject();
     
     // If moving within the same column
     if (sourceColumnId === destColumnId) {
       // Remove task from its current position
-      await this.getCollection().updateOne(
-        { _id: new ObjectId(sourceColumnId) },
-        { $pull: { tasks: { id: taskId } } }
-      );
-      
-      // Find the column again after removing the task
-      const updatedColumn = await this.getCollection().findOne({ _id: new ObjectId(sourceColumnId) });
-      const newTasks = updatedColumn.tasks;
+      sourceColumn.tasks.splice(taskIndex, 1);
       
       // Insert task at the destination position
-      newTasks.splice(destIndex, 0, task);
+      sourceColumn.tasks.splice(destIndex, 0, task);
       
-      // Update the column with the new task order
-      await this.getCollection().updateOne(
-        { _id: new ObjectId(sourceColumnId) },
-        { $set: { tasks: newTasks } }
-      );
+      // Save the changes
+      await sourceColumn.save();
     } else {
       // Moving between different columns
       
-      // Remove task from source column
-      await this.getCollection().updateOne(
-        { _id: new ObjectId(sourceColumnId) },
-        { $pull: { tasks: { id: taskId } } }
-      );
-      
       // Find destination column
-      const destColumn = await this.getCollection().findOne({ _id: new ObjectId(destColumnId) });
+      const destColumn = await Column.findById(destColumnId);
       if (!destColumn) {
-        // If destination column not found, put the task back in the source column
-        await this.getCollection().updateOne(
-          { _id: new ObjectId(sourceColumnId) },
-          { $push: { tasks: task } }
-        );
         throw new Error("Destination column not found");
       }
       
-      // Update the task's columnId if you need to track it within the task object
-      task.columnId = destColumnId;
+      // Remove task from source column
+      sourceColumn.tasks.splice(taskIndex, 1);
+      await sourceColumn.save();
       
       // Insert task at the destination position in the destination column
-      const destTasks = destColumn.tasks || [];
-      destTasks.splice(destIndex, 0, task);
-      
-      // Update the destination column with the new tasks array
-      await this.getCollection().updateOne(
-        { _id: new ObjectId(destColumnId) },
-        { $set: { tasks: destTasks } }
-      );
+      destColumn.tasks.splice(destIndex, 0, task);
+      await destColumn.save();
     }
     
     return {

@@ -22,11 +22,11 @@ app.use('/api/tasks', taskRoutes);
 // Start the server
 async function startServer() {
   try {
-    // Connect to MongoDB
-    const db = await connectToMongoDB();
+    // Connect to MongoDB using Mongoose
+    await connectToMongoDB();
     
     // Initialize with dummy data
-    await initDummyData(db);
+    await initDummyData();
     
     // Start the server
     app.listen(PORT, () => {
