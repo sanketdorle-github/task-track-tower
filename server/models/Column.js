@@ -1,26 +1,65 @@
+
 const { ObjectId } = require('mongodb');
 const db = require('../config/db');
 
+// Column schema structure
+const columnSchema = {
+  title: String,
+  boardId: String,
+  tasks: Array // Array of task objects
+};
+
+// Task schema structure (embedded in column)
+const taskSchema = {
+  id: String,
+  title: String,
+  description: String
+};
+
 class Column {
+  static getCollection() {
+    return db.getDb().collection("columns");
+  }
+
   static async getAllByBoardId(boardId) {
-    return await db.collection("columns").find({ boardId }).toArray();
+    // Validate boardId
+    if (!boardId) {
+      throw new Error("Board ID is required");
+    }
+    
+    return await this.getCollection().find({ boardId }).toArray();
   }
 
   static async getById(id) {
-    return await db.collection("columns").findOne({ _id: new ObjectId(id) });
+    return await this.getCollection().findOne({ _id: new ObjectId(id) });
   }
 
   static async create(title, boardId) {
-    const result = await db.collection("columns").insertOne({
+    // Validate required fields
+    if (!title) {
+      throw new Error("Column title is required");
+    }
+    if (!boardId) {
+      throw new Error("Board ID is required");
+    }
+    
+    const columnDoc = {
       title,
       boardId,
       tasks: []
-    });
+    };
+    
+    const result = await this.getCollection().insertOne(columnDoc);
     return await this.getById(result.insertedId);
   }
 
   static async update(id, title) {
-    await db.collection("columns").updateOne(
+    // Validate required fields
+    if (!title) {
+      throw new Error("Column title is required");
+    }
+    
+    await this.getCollection().updateOne(
       { _id: new ObjectId(id) },
       { $set: { title } }
     );
@@ -28,7 +67,7 @@ class Column {
   }
 
   static async delete(id) {
-    await db.collection("columns").deleteOne({ _id: new ObjectId(id) });
+    await this.getCollection().deleteOne({ _id: new ObjectId(id) });
     return { id };
   }
 
